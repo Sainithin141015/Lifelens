@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Habits{% endblock %}
+{% block page_title %}<i class="bi bi-heart-pulse-fill me-2"></i>Habits{% endblock %}
+{% block content %}
+<div class="page-header mb-4">
+  <div>
+    <h2 class="page-title"><i class="bi bi-heart-pulse-fill me-2 text-danger"></i>Habit & Lifestyle Analytics</h2>
+    <p class="page-subtitle">Track daily habits and build a healthier, more productive life</p>
+  </div>
+</div>
+
+<!-- KPI Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-icon"><i class="bi bi-moon-stars-fill"></i></div>
+      <div class="kpi-value">{{ stats.avg_sleep }}h</div>
+      <div class="kpi-label">Avg Sleep</div>
+      <div class="kpi-sub">Goal: {{ current_user.sleep_goal or 8 }}h</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-card kpi-green">
+      <div class="kpi-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+      <div class="kpi-value">{{ stats.avg_exercise | int }}m</div>
+      <div class="kpi-label">Avg Exercise</div>
+      <div class="kpi-sub">Goal: {{ current_user.exercise_goal or 30 | int }}m</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-card kpi-yellow">
+      <div class="kpi-icon"><i class="bi bi-droplet-fill"></i></div>
+      <div class="kpi-value">{{ stats.avg_water }}</div>
+      <div class="kpi-label">Avg Water</div>
+      <div class="kpi-sub">glasses/day</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-icon"><i class="bi bi-star-fill"></i></div>
+      <div class="kpi-value">{{ avg_score }}</div>
+      <div class="kpi-label">Lifestyle Score</div>
+      <div class="kpi-sub">/100</div>
+    </div>
+  </div>
+</div>
+
+<!-- ML Analysis -->
+{% if analysis and analysis.positive_habits %}
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header-custom"><i class="bi bi-check-circle-fill text-success me-2"></i>Positive Habits</div>
+      <div class="card-body">
+        {% for habit in analysis.positive_habits %}
+        <div class="habit-analysis-item positive">
+          <i class="bi bi-check2-circle text-success"></i>
+          <span>{{ habit }}</span>
+        </div>
+        {% endfor %}
+        {% if analysis.predicted_score_30d %}
+        <div class="mt-3 p-3 bg-success-soft rounded">
+          <div class="small fw-semibold text-success">
+            <i class="bi bi-graph-up me-1"></i>Trend: {{ analysis.trend }}
+          </div>
+          <div class="small text-muted">Predicted score in 30 days: <strong>{{ analysis.predicted_score_30d }}/100</strong></div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header-custom"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Areas to Improve</div>
+      <div class="card-body">
+        {% for habit in analysis.negative_habits %}
+        <div class="habit-analysis-item negative">
+          <i class="bi bi-exclamation-circle text-warning"></i>
+          <span>{{ habit }}</span>
+        </div>
+        {% else %}
+        <div class="empty-state-sm"><i class="bi bi-emoji-smile"></i><p>No issues detected!</p></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+  <!-- Log Habits Form -->
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header-custom">
+        <i class="bi bi-plus-circle-fill text-primary me-2"></i>
+        Log Today's Habits
+        {% if today_log %}<span class="badge bg-success ms-2">Updated today</span>{% endif %}
+      </div>
+      <div class="card-body p-4">
+        <form method="POST" action="{{ url_for('habits.log_habit') }}">
+          <input type="hidden" name="date" value="{{ today }}"/>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label"><i class="bi bi-moon-stars me-1 text-primary"></i>Sleep (hours)</label>
+              <input type="number" name="sleep_hours" class="form-control" step="0.5" min="0" max="16"
+                     placeholder="7.5" value="{{ today_log.sleep_hours if today_log else '' }}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="bi bi-droplet me-1 text-info"></i>Water (glasses)</label>
+              <input type="number" name="water_intake" class="form-control" step="0.5" min="0" max="20"
+                     placeholder="8" value="{{ today_log.water_intake if today_log else '' }}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="bi bi-lightning-charge me-1 text-warning"></i>Exercise (min)</label>
+              <input type="number" name="exercise_minutes" class="form-control" min="0" max="300"
+                     placeholder="30" value="{{ today_log.exercise_minutes if today_log else '' }}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="bi bi-book me-1 text-success"></i>Reading (min)</label>
+              <input type="number" name="reading_minutes" class="form-control" min="0" max="300"
+                     placeholder="20" value="{{ today_log.reading_minutes if today_log else '' }}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="bi bi-peace me-1 text-purple"></i>Meditation (min)</label>
+              <input type="number" name="meditation_minutes" class="form-control" min="0" max="120"
+                     placeholder="10" value="{{ today_log.meditation_minutes if today_log else '' }}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="bi bi-display me-1 text-danger"></i>Screen Time (hrs)</label>
+              <input type="number" name="screen_time_hours" class="form-control" step="0.5" min="0" max="24"
+                     placeholder="4" value="{{ today_log.screen_time_hours if today_log else '' }}"/>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea name="notes" class="form-control" rows="2" placeholder="How was your day?">{{ today_log.notes if today_log else '' }}</textarea>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                <i class="bi bi-journal-check me-2"></i>
+                {% if today_log %}Update Today's Log{% else %}Log Habits{% endif %}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="col-md-7">
+    <div class="card mb-4">
+      <div class="card-header-custom"><i class="bi bi-graph-up me-2"></i>Weekly Lifestyle Score Trend</div>
+      <div class="card-body p-3">
+        <canvas id="lifestyleChart" height="160"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header-custom"><i class="bi bi-bar-chart me-2"></i>Sleep & Exercise Trend</div>
+      <div class="card-body p-3">
+        <canvas id="sleepExerciseChart" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logs Table -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header-custom"><i class="bi bi-calendar3 me-2"></i>Habit Log History</div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 data-table">
+          <thead><tr><th>Date</th><th>Sleep</th><th>Water</th><th>Exercise</th><th>Reading</th><th>Screen</th><th>Score</th><th></th></tr></thead>
+          <tbody>
+            {% for log in logs %}
+            <tr>
+              <td class="text-muted small">{{ log.date.strftime('%b %d') }}</td>
+              <td>{{ log.sleep_hours or 0 }}h
+                {% if log.sleep_hours and log.sleep_hours >= (current_user.sleep_goal or 8) * 0.9 %}<i class="bi bi-check-circle-fill text-success small"></i>{% endif %}
+              </td>
+              <td>{{ log.water_intake or 0 }}g</td>
+              <td>{{ log.exercise_minutes or 0 }}m</td>
+              <td>{{ log.reading_minutes or 0 }}m</td>
+              <td class="{% if (log.screen_time_hours or 0) > 6 %}text-danger{% endif %}">{{ log.screen_time_hours or 0 }}h</td>
+              <td>
+                <div class="score-pill" style="--pct:{{ log.lifestyle_score or 0 }}">
+                  {{ log.lifestyle_score or 0 }}
+                </div>
+              </td>
+              <td>
+                <form method="POST" action="{{ url_for('habits.delete_log', log_id=log.id) }}" class="d-inline">
+                  <button class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Delete?')">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-3">No habits logged yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const wt = {{ weekly_trend | tojson }};
+new Chart(document.getElementById('lifestyleChart'), {
+  type: 'line',
+  data: {
+    labels: wt.labels,
+    datasets: [{ label: 'Lifestyle Score', data: wt.scores, borderColor: '#8B5CF6', backgroundColor: 'rgba(139,92,246,0.1)', tension: 0.4, fill: true }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100 } } }
+});
+new Chart(document.getElementById('sleepExerciseChart'), {
+  type: 'bar',
+  data: {
+    labels: wt.labels,
+    datasets: [
+      { label: 'Sleep (h)', data: wt.sleep, backgroundColor: 'rgba(37,99,235,0.7)', borderRadius: 4, yAxisID: 'y1' },
+      { label: 'Exercise (min)', data: wt.exercise, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4, yAxisID: 'y2' }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 } } } },
+    scales: {
+      y1: { position: 'left', beginAtZero: true, title: { display: true, text: 'Hours' } },
+      y2: { position: 'right', beginAtZero: true, title: { display: true, text: 'Minutes' }, grid: { drawOnChartArea: false } }
+    }
+  }
+});
+</script>
+{% endblock %}

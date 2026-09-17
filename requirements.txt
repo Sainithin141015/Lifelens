@@ -1,0 +1,17 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+Werkzeug
+psycopg2-binary
+pandas
+numpy
+scikit-learn
+joblib
+python-dotenv
+WTForms
+email-validator
+requests
+reportlab
+openai
+pytest

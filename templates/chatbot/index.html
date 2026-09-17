@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}AI Assistant{% endblock %}
+{% block page_title %}<i class="bi bi-robot me-2"></i>AI Assistant{% endblock %}
+
+{% block content %}
+<div class="page-header mb-3">
+  <div>
+    <h2 class="page-title"><i class="bi bi-robot me-2 text-primary"></i>LifeLens AI Assistant</h2>
+    <p class="page-subtitle mb-0">Powered by Gemini · Personalized to your real data</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary btn-sm" onclick="clearChat()" title="Clear chat">
+      <i class="bi bi-trash me-1"></i>Clear
+    </button>
+    <button class="btn btn-outline-primary btn-sm" onclick="loadWeeklySummary()">
+      <i class="bi bi-file-earmark-bar-graph me-1"></i>Weekly Report
+    </button>
+  </div>
+</div>
+
+<div class="chatbot-layout">
+
+  <!-- Suggestions Panel -->
+  <div class="chat-suggestions">
+    <div class="suggestions-title">💡 Try asking</div>
+    <div class="suggestion-chips">
+      <button class="chip" onclick="sendSuggestion(this)">Give me a full financial analysis</button>
+      <button class="chip" onclick="sendSuggestion(this)">How can I reach my savings goal faster?</button>
+      <button class="chip" onclick="sendSuggestion(this)">Am I spending too much on any category?</button>
+      <button class="chip" onclick="sendSuggestion(this)">How can I improve my CGPA?</button>
+      <button class="chip" onclick="sendSuggestion(this)">Which subjects need more attention?</button>
+      <button class="chip" onclick="sendSuggestion(this)">Analyse my sleep and exercise habits</button>
+      <button class="chip" onclick="sendSuggestion(this)">What's my biggest weakness right now?</button>
+      <button class="chip" onclick="sendSuggestion(this)">Give me a full life balance report</button>
+      <button class="chip" onclick="sendSuggestion(this)">What should I focus on this week?</button>
+      <button class="chip" onclick="sendSuggestion(this)">How does my screen time affect productivity?</button>
+    </div>
+
+    <!-- AI Status Badge -->
+    <div class="mt-3 pt-3 border-top">
+      <div class="d-flex align-items-center gap-2 small">
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+          <i class="bi bi-stars me-1"></i>Gemini AI
+        </span>
+        <span class="text-muted">Detailed, data-driven answers</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Window -->
+  <div class="chat-window">
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-message bot-message">
+        <div class="chat-avatar bot-avatar"><i class="bi bi-stars"></i></div>
+        <div class="chat-bubble">
+          <p>👋 Hello, <strong>{{ current_user.name.split()[0] }}</strong>! I'm your LifeLens AI assistant, powered by <strong>Gemini</strong>.</p>
+          <p>I have full access to your financial records, study logs, and habit history. I'll give you <strong>detailed, personalised analysis</strong> — not generic advice.</p>
+          <p class="mb-0 small text-muted">💡 Try: <em>"Give me a full financial analysis"</em> or <em>"What should I focus on this week?"</em></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typing indicator -->
+    <div class="typing-indicator" id="typingIndicator" style="display:none">
+      <div class="chat-avatar bot-avatar"><i class="bi bi-stars"></i></div>
+      <div class="chat-bubble typing">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-area">
+      <div class="chat-input-wrapper">
+        <textarea id="chatInput" class="chat-input"
+          placeholder="Ask me anything about your finances, study, or lifestyle…"
+          rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+        <button class="chat-send-btn" onclick="sendMessage()" id="sendBtn">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+      <div class="chat-disclaimer small text-muted mt-1">
+        <i class="bi bi-shield-check me-1"></i>Responses use your actual logged data · Shift+Enter for new line
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const chatMessages  = document.getElementById('chatMessages');
+const chatInput     = document.getElementById('chatInput');
+const typingIndicator = document.getElementById('typingIndicator');
+
+/* ─── Markdown → HTML renderer ──────────────────────────────── */
+function markdownToHtml(text) {
+  // Escape HTML first (safety)
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Code blocks
+  html = html.replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre class="chat-code"><code>$1</code></pre>');
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+  // h2
+  html = html.replace(/^## (.+)$/gm, '<h5 class="chat-h2 mt-3 mb-2">$1</h5>');
+  // h3
+  html = html.replace(/^### (.+)$/gm, '<h6 class="chat-h3 mt-2 mb-1">$1</h6>');
+  // h4
+  html = html.replace(/^#### (.+)$/gm, '<div class="chat-h4 fw-semibold mt-2 mb-1">$1</div>');
+  // Bold + italic
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Horizontal rule
+  html = html.replace(/^---$/gm, '<hr class="my-2">');
+  // Numbered list items
+  html = html.replace(/^\d+\. (.+)$/gm, '<li class="num-item">$1</li>');
+  html = html.replace(/(<li class="num-item">[\s\S]*?<\/li>\n?)+/g,
+    m => '<ol class="chat-ol ps-3 mb-2">' + m + '</ol>');
+  // Bullet list items
+  html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g,
+    m => '<ul class="chat-ul ps-3 mb-2">' + m + '</ul>');
+  // Tables (markdown pipe tables)
+  html = html.replace(/(\|.+\|\n\|[-| :]+\|\n)((?:\|.+\|\n?)*)/g, function(_, head, body) {
+    const headCells = head.split('\n')[0].split('|').filter(c => c.trim()).map(c =>
+      `<th class="px-2 py-1">${c.trim()}</th>`).join('');
+    const bodyRows = body.trim().split('\n').map(row => {
+      const cells = row.split('|').filter(c => c.trim()).map(c =>
+        `<td class="px-2 py-1">${c.trim()}</td>`).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<div class="table-responsive my-2"><table class="table table-sm table-bordered chat-table mb-0"><thead class="table-light"><tr>${headCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
+  });
+  // Paragraphs / line breaks
+  html = html.replace(/\n{2,}/g, '</p><p class="mb-2">');
+  html = html.replace(/\n/g, '<br>');
+  return '<p class="mb-2">' + html + '</p>';
+}
+
+/* ─── Append message ─────────────────────────────────────────── */
+function appendMessage(role, text, isLoading = false) {
+  const isBot = role === 'bot';
+  const div   = document.createElement('div');
+  div.className = `chat-message ${isBot ? 'bot-message' : 'user-message'}`;
+  if (isLoading) div.id = 'loadingMsg';
+
+  if (isBot) {
+    div.innerHTML =
+      `<div class="chat-avatar bot-avatar"><i class="bi bi-stars"></i></div>
+       <div class="chat-bubble">${markdownToHtml(text)}</div>`;
+  } else {
+    const safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    div.innerHTML =
+      `<div class="chat-bubble">${safe}</div>
+       <div class="chat-avatar user-avatar">{{ current_user.name[0].upper() }}</div>`;
+  }
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+/* ─── Send message ───────────────────────────────────────────── */
+async function sendMessage() {
+  const msg = chatInput.value.trim();
+  if (!msg) return;
+
+  appendMessage('user', msg);
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+
+  typingIndicator.style.display = 'flex';
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  document.getElementById('sendBtn').disabled = true;
+
+  try {
+    const res  = await fetch('{{ url_for("chatbot.ask") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    });
+    const data = await res.json();
+    typingIndicator.style.display = 'none';
+    document.getElementById('sendBtn').disabled = false;
+    appendMessage('bot', data.response || data.error || '⚠️ No response received.');
+  } catch (e) {
+    typingIndicator.style.display = 'none';
+    document.getElementById('sendBtn').disabled = false;
+    appendMessage('bot', '⚠️ Something went wrong. Please try again.');
+  }
+}
+
+/* ─── Suggestion chips ───────────────────────────────────────── */
+function sendSuggestion(btn) {
+  chatInput.value = btn.textContent.trim();
+  sendMessage();
+}
+
+/* ─── Weekly summary ─────────────────────────────────────────── */
+async function loadWeeklySummary() {
+  appendMessage('user', '📊 Generate my weekly life report');
+  typingIndicator.style.display = 'flex';
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  try {
+    const res  = await fetch('{{ url_for("chatbot.weekly_summary") }}');
+    const data = await res.json();
+    typingIndicator.style.display = 'none';
+    appendMessage('bot', data.summary || '⚠️ Could not generate summary.');
+  } catch (e) {
+    typingIndicator.style.display = 'none';
+    appendMessage('bot', '⚠️ Could not load summary.');
+  }
+}
+
+/* ─── Clear chat ─────────────────────────────────────────────── */
+function clearChat() {
+  chatMessages.innerHTML = '';
+  appendMessage('bot',
+    '🔄 Chat cleared! Ask me anything about your finances, study, or lifestyle — I have full access to your data.');
+}
+
+/* ─── Auto-resize textarea ───────────────────────────────────── */
+chatInput.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+});
+</script>
+{% endblock %}

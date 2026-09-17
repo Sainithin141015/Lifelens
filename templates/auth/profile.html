@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block content %}
+<div class="page-header mb-4">
+  <h2 class="page-title"><i class="bi bi-person-circle me-2"></i>My Profile</h2>
+  <p class="page-subtitle">Manage your personal details and goals</p>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card stat-card text-center p-4">
+      <div class="avatar-lg mx-auto mb-3">{{ current_user.name[0].upper() }}</div>
+      <h4 class="fw-bold mb-1">{{ current_user.name }}</h4>
+      <p class="text-muted small mb-1">{{ current_user.email }}</p>
+      <p class="text-muted small mb-3">{{ current_user.college or 'College not set' }}</p>
+      <div class="d-flex justify-content-center gap-3">
+        <div class="text-center">
+          <div class="stat-value-sm text-primary">{{ current_user.cgpa or '–' }}</div>
+          <div class="stat-label-xs">CGPA</div>
+        </div>
+        <div class="text-center">
+          <div class="stat-value-sm text-success">{{ current_user.total_points or 0 }}</div>
+          <div class="stat-label-xs">Points</div>
+        </div>
+        <div class="text-center">
+          <div class="stat-value-sm text-warning">{{ current_user.streak_days or 0 }}</div>
+          <div class="stat-label-xs">Streak</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header-custom">Edit Profile</div>
+      <div class="card-body p-4">
+        <form method="POST" action="{{ url_for('auth.profile') }}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Full Name</label>
+              <input type="text" name="name" class="form-control" value="{{ current_user.name }}"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Age</label>
+              <input type="number" name="age" class="form-control" value="{{ current_user.age or '' }}"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Gender</label>
+              <select name="gender" class="form-select">
+                {% for g in ['Male','Female','Non-binary','Other'] %}
+                <option {% if current_user.gender == g %}selected{% endif %}>{{ g }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">College</label>
+              <input type="text" name="college" class="form-control" value="{{ current_user.college or '' }}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Degree</label>
+              <input type="text" name="degree" class="form-control" value="{{ current_user.degree or '' }}"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Current Year</label>
+              <input type="number" name="current_year" class="form-control" value="{{ current_user.current_year or '' }}" min="1" max="5"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Current CGPA</label>
+              <input type="number" name="cgpa" class="form-control" value="{{ current_user.cgpa or '' }}" step="0.01"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Target CGPA</label>
+              <input type="number" name="target_cgpa" class="form-control" value="{{ current_user.target_cgpa or '' }}" step="0.01"/>
+            </div>
+
+            <div class="col-12"><hr class="my-1"/></div>
+
+            <div class="col-md-4">
+              <label class="form-label">Monthly Income (₹)</label>
+              <input type="number" name="monthly_income" class="form-control" value="{{ current_user.monthly_income or '' }}"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Monthly Expenses (₹)</label>
+              <input type="number" name="monthly_expenses" class="form-control" value="{{ current_user.monthly_expenses or '' }}"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Savings Goal (₹)</label>
+              <input type="number" name="savings_goal" class="form-control" value="{{ current_user.savings_goal or '' }}"/>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Daily Study Goal (hrs)</label>
+              <input type="number" name="daily_study_hours_goal" class="form-control" step="0.5" value="{{ current_user.daily_study_hours_goal or 6 }}"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Sleep Goal (hrs)</label>
+              <input type="number" name="sleep_goal" class="form-control" step="0.5" value="{{ current_user.sleep_goal or 8 }}"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Exercise Goal (min/day)</label>
+              <input type="number" name="exercise_goal" class="form-control" value="{{ current_user.exercise_goal or 30 }}"/>
+            </div>
+
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary fw-semibold px-4">
+                <i class="bi bi-check-lg me-2"></i>Save Changes
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

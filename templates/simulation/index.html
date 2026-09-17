@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Simulation{% endblock %}
+{% block page_title %}<i class="bi bi-graph-up-arrow me-2"></i>Simulation{% endblock %}
+{% block content %}
+<div class="page-header mb-4">
+  <div>
+    <h2 class="page-title"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Future Outcome Simulation</h2>
+    <p class="page-subtitle">Run what-if scenarios to visualize your potential futures</p>
+  </div>
+</div>
+
+<!-- Simulation Tabs -->
+<ul class="nav nav-pills mb-4 sim-tabs" id="simTabs">
+  <li class="nav-item"><button class="nav-link active" onclick="switchSim('finance')"><i class="bi bi-currency-rupee me-1"></i>Financial</button></li>
+  <li class="nav-item"><button class="nav-link" onclick="switchSim('study')"><i class="bi bi-book me-1"></i>Study</button></li>
+  <li class="nav-item"><button class="nav-link" onclick="switchSim('habit')"><i class="bi bi-heart-pulse me-1"></i>Lifestyle</button></li>
+</ul>
+
+<!-- ── Finance Simulation ─────────────────────────────────── -->
+<div id="financeSim">
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header-custom"><i class="bi bi-sliders me-2"></i>Configure</div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label">Current Monthly Savings (₹)</label>
+            <input type="number" id="fin_savings" class="form-control" value="{{ fin_stats.savings | int }}" min="0"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Savings Goal (₹)</label>
+            <input type="number" id="fin_goal" class="form-control" value="{{ user.savings_goal or 100000 }}"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Projection Months</label>
+            <input type="range" id="fin_months" class="form-range" min="3" max="36" value="12" oninput="document.getElementById('fin_months_val').textContent=this.value"/>
+            <span id="fin_months_val" class="badge bg-primary">12</span>
+          </div>
+          <button class="btn btn-primary w-100 fw-semibold" onclick="runFinanceSim()">
+            <i class="bi bi-play-fill me-2"></i>Run Simulation
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header-custom"><i class="bi bi-bar-chart-line me-2"></i>Projection Results</div>
+        <div class="card-body p-3" id="finSimResult">
+          <div class="empty-state-sm"><i class="bi bi-graph-up"></i><p>Configure and run the simulation</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12" id="finChartContainer" style="display:none">
+      <div class="card">
+        <div class="card-header-custom"><i class="bi bi-graph-up me-2"></i>Balance Projection Chart</div>
+        <div class="card-body p-3"><canvas id="finChart" height="200"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Study Simulation ───────────────────────────────────── -->
+<div id="studySim" style="display:none">
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header-custom"><i class="bi bi-sliders me-2"></i>Configure</div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label">Current CGPA</label>
+            <input type="number" id="study_cgpa" class="form-control" step="0.1" min="0" max="10" value="{{ user.cgpa or 7.0 }}"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Target CGPA</label>
+            <input type="number" id="study_target" class="form-control" step="0.1" min="0" max="10" value="{{ user.target_cgpa or 9.0 }}"/>
+          </div>
+          <button class="btn btn-success w-100 fw-semibold" onclick="runStudySim()">
+            <i class="bi bi-play-fill me-2"></i>Run Simulation
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header-custom"><i class="bi bi-bar-chart me-2"></i>Study Intensity Results</div>
+        <div class="card-body p-3" id="studySimResult">
+          <div class="empty-state-sm"><i class="bi bi-book"></i><p>Configure and run the simulation</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12" id="studyChartContainer" style="display:none">
+      <div class="card">
+        <div class="card-header-custom">CGPA Trajectory by Study Hours</div>
+        <div class="card-body p-3"><canvas id="studyChart" height="200"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Habit Simulation ───────────────────────────────────── -->
+<div id="habitSim" style="display:none">
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header-custom"><i class="bi bi-sliders me-2"></i>Configure</div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label">Current Lifestyle Score</label>
+            <input type="number" id="habit_score" class="form-control" min="0" max="100" value="55"/>
+          </div>
+          <button class="btn btn-danger w-100 fw-semibold" onclick="runHabitSim()">
+            <i class="bi bi-play-fill me-2"></i>Run Simulation
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header-custom">Lifestyle Improvement Scenarios</div>
+        <div class="card-body p-3" id="habitSimResult">
+          <div class="empty-state-sm"><i class="bi bi-heart-pulse"></i><p>Configure and run the simulation</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12" id="habitChartContainer" style="display:none">
+      <div class="card">
+        <div class="card-header-custom">Predicted Lifestyle Score Over 8 Weeks</div>
+        <div class="card-body p-3"><canvas id="habitChart" height="200"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let finChartInst, studyChartInst, habitChartInst;
+
+function switchSim(type) {
+  ['finance','study','habit'].forEach(t => {
+    document.getElementById(t + 'Sim').style.display = t === type ? 'block' : 'none';
+  });
+  document.querySelectorAll('#simTabs .nav-link').forEach((btn, i) => {
+    btn.classList.toggle('active', ['finance','study','habit'][i] === type);
+  });
+}
+
+async function runFinanceSim() {
+  const payload = {
+    type: 'finance',
+    current_savings: document.getElementById('fin_savings').value,
+    goal: document.getElementById('fin_goal').value,
+    months: document.getElementById('fin_months').value
+  };
+  const data = await callSim(payload);
+  if (!data) return;
+
+  const resultDiv = document.getElementById('finSimResult');
+  resultDiv.innerHTML = `<div class="row g-3">` + data.scenarios.map(s => `
+    <div class="col-md-3">
+      <div class="sim-scenario-card ${s.goal_reached ? 'sim-success' : ''}">
+        <div class="sim-label">${s.label}</div>
+        <div class="sim-value">₹${s.final_balance.toLocaleString('en-IN')}</div>
+        <div class="sim-sub">₹${s.monthly_saving.toLocaleString('en-IN')}/mo</div>
+        ${s.goal_reached ? `<div class="sim-badge">✅ Goal in ${s.months_to_goal} mo</div>` : '<div class="sim-badge sim-no">Goal not reached</div>'}
+      </div>
+    </div>`).join('') + '</div>';
+
+  // Chart
+  document.getElementById('finChartContainer').style.display = 'block';
+  const colors = ['#2563EB','#10B981','#F59E0B','#EF4444'];
+  if (finChartInst) finChartInst.destroy();
+  finChartInst = new Chart(document.getElementById('finChart'), {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: data.scenarios.map((s, i) => ({
+        label: s.label, data: s.balance_series,
+        borderColor: colors[i], tension: 0.4, fill: false
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+async function runStudySim() {
+  const data = await callSim({ type: 'study', current_cgpa: document.getElementById('study_cgpa').value, target_cgpa: document.getElementById('study_target').value });
+  if (!data) return;
+
+  document.getElementById('studySimResult').innerHTML = `<div class="row g-3">` + data.scenarios.map(s => `
+    <div class="col-md-3">
+      <div class="sim-scenario-card ${s.predicted_cgpa >= parseFloat(document.getElementById('study_target').value) ? 'sim-success' : ''}">
+        <div class="sim-label">${s.label}</div>
+        <div class="sim-value">${s.predicted_cgpa}</div>
+        <div class="sim-sub">Predicted CGPA</div>
+        ${s.weeks_to_target ? `<div class="sim-badge">🎓 ${s.weeks_to_target} wks to goal</div>` : ''}
+      </div>
+    </div>`).join('') + '</div>';
+
+  document.getElementById('studyChartContainer').style.display = 'block';
+  const colors = ['#2563EB','#10B981','#F59E0B','#EF4444'];
+  if (studyChartInst) studyChartInst.destroy();
+  studyChartInst = new Chart(document.getElementById('studyChart'), {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: data.scenarios.map((s, i) => ({
+        label: s.label, data: s.cgpa_series, borderColor: colors[i], tension: 0.4, fill: false
+      }))
+    },
+    options: { responsive: true, plugins: { legend: { position: 'top' } } }
+  });
+}
+
+async function runHabitSim() {
+  const data = await callSim({ type: 'habit', current_score: document.getElementById('habit_score').value });
+  if (!data) return;
+
+  document.getElementById('habitSimResult').innerHTML = `<div class="row g-3">` + data.scenarios.map(s => `
+    <div class="col-md-3">
+      <div class="sim-scenario-card">
+        <div class="sim-label">${s.label}</div>
+        <div class="sim-value">${s.final_score}</div>
+        <div class="sim-sub">Predicted Score/100</div>
+        <div class="sim-changes">${s.changes.map(c => `<span>✓ ${c}</span>`).join('')}</div>
+      </div>
+    </div>`).join('') + '</div>';
+
+  document.getElementById('habitChartContainer').style.display = 'block';
+  const colors = ['#2563EB','#10B981','#F59E0B','#EF4444'];
+  if (habitChartInst) habitChartInst.destroy();
+  habitChartInst = new Chart(document.getElementById('habitChart'), {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: data.scenarios.map((s, i) => ({
+        label: s.label, data: s.score_series, borderColor: colors[i], tension: 0.4, fill: false
+      }))
+    },
+    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { min: 0, max: 100 } } }
+  });
+}
+
+async function callSim(payload) {
+  try {
+    const res = await fetch('{{ url_for("simulation.run") }}', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    return await res.json();
+  } catch (e) { alert('Simulation error: ' + e); return null; }
+}
+</script>
+{% endblock %}
