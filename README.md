@@ -42,4 +42,13 @@ open http://localhost:5000
 - **ML**: Scikit-learn, NumPy, Pandas
 - **Frontend**: HTML5, Bootstrap 5, Chart.js
 - **AI**: Rule-based engine + optional OpenAI API
+
+
+## Team
+
+LifeLens is a collaborative project developed by a team of four members.
+
+The project combines application development, AI-based functionality, database management, integration, testing, and frontend components.
 # Lifelens
+
+
